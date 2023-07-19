@@ -1,0 +1,44 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - master
+
+jobs:
+- job: RunTests
+  displayName: 'Run Test Cases'
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  steps:
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '3.x'
+      
+  - script: dotnet test --logger "trx;LogFileName=test-results.trx"
+    displayName: 'Run Test Cases'
+    continueOnError: true
+    env:
+      VSTEST_TOOLPATH: '$(Agent.HomeDirectory)/.nuget/packages/microsoft.testplatform.consolerunner'
+  
+  - task: PublishTestResults@2
+    displayName: 'Publish Test Results'
+    inputs:
+      testResultsFormat: 'VSTest'
+      testResultsFiles: '**/test-results.trx'
+      mergeTestResults: true
+      testRunTitle: 'Test Results'
+  
+  - task: PublishCodeCoverageResults@1
+    displayName: 'Publish Code Coverage'
+    inputs:
+      codeCoverageTool: 'Cobertura'
+      summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+      reportDirectory: '$(System.DefaultWorkingDirectory)/CodeCoverage'
+      failIfCoverageEmpty: true
